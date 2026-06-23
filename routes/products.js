@@ -10,7 +10,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 // ⚠️ DHYAN DEIN: Yahan apni API keys paste karni hain!
 cloudinary.config({ 
-  cloud_name: 'duhokqwv0j', // Tumhara Cloud Name (screenshot se liya maine)
+  cloud_name: 'duhokqw0j', // Tumhara Cloud Name (screenshot se liya maine)
   api_key: '736999584845369', 
   api_secret: 'rVgkQtDvgghhadMoQNoxuiw4bUI' 
 });

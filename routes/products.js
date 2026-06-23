@@ -4,25 +4,25 @@ const multer = require('multer');
 const Product = require('../models/Product');
 const path = require('path');
 
-// Image upload karne ka logic (Multer Configuration)
+// Image upload logic (Multer Configuration)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Kis folder me save karna hai
+    cb(null, 'uploads/'); // Destination folder for uploads
   },
   filename: function (req, file, cb) {
-    // Photo ka naam unique banane ke liye time jodh denge
+    // Appending timestamp to make the filename unique
     cb(null, Date.now() + path.extname(file.originalname)); 
   }
 });
 const upload = multer({ storage: storage });
 
-// API 1: Naya Product Upload Karna (Seller Dashboard ke liye)
+// API 1: Upload New Product (For Seller Dashboard)
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    const { title, price, category, sellerId } = req.body; // <-- NAYA FIELD
+    const { title, price, category, sellerId } = req.body; 
     const imagePath = req.file.filename;
 
-    const newProduct = new Product({ title, price, category, imagePath, sellerId }); // <-- ISME BHI JO DO
+    const newProduct = new Product({ title, price, category, imagePath, sellerId }); 
     await newProduct.save();
 
     res.status(201).json({ message: "Item added successfully!", product: newProduct });
@@ -31,10 +31,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// API 2: Saare Products Dikhana (Home Page ke liye)
+// API 2: Get All Products (For Home Page)
 router.get('/all', async (req, res) => {
   try {
-    // Sabse naye products sabse pehle dikhenge
+    // Newest products will appear first
     const products = await Product.find().sort({ createdAt: -1 });
     res.status(200).json(products);
   } catch (error) {
@@ -48,14 +48,70 @@ router.get('/search', async (req, res) => {
     const query = req.query.q;
     if (!query) return res.status(200).json([]);
     
-    // Database mein title ko ignore-case ($options: 'i') karke dhoondhega
+    // Case-insensitive search by title
     const products = await Product.find({
       title: { $regex: query, $options: 'i' }
-    }).limit(5); // Sirf top 5 suggestions dikhayega taaki screen na bhare
+    }).limit(5); // Limit to top 5 suggestions to prevent UI clutter
     
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 });
+
+// ==========================================
+// 💥 NEW FEATURES START HERE 💥
+// ==========================================
+
+// API 4: Delete Product (For Partner Dashboard)
+router.delete('/delete/:id', async (req, res) => {
+  try {
+    const productId = req.params.id;
+    
+    // Delete product from MongoDB
+    const deletedProduct = await Product.findByIdAndDelete(productId);
+    
+    if (!deletedProduct) {
+      return res.status(404).json({ message: "Product not found!" });
+    }
+    
+    res.status(200).json({ message: "Product deleted successfully!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting product", error: error.message });
+  }
+});
+
+// API 5: Edit / Update Product (For Partner Dashboard)
+router.put('/edit/:id', upload.single('file'), async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const { title, price, category } = req.body;
+
+    // Check if the product exists in the database
+    let product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found!" });
+    }
+
+    // Update with new details (or keep existing if not provided)
+    product.title = title || product.title;
+    product.price = price || product.price;
+    product.category = category || product.category;
+
+    // Update image path if a new photo is uploaded
+    if (req.file) {
+      product.imagePath = req.file.filename;
+    }
+
+    // Save the final updates
+    await product.save();
+    
+    res.status(200).json({ message: "Product updated successfully!", product });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating product", error: error.message });
+  }
+});
+
 module.exports = router;

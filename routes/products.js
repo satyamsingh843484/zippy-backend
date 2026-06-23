@@ -4,23 +4,36 @@ const multer = require('multer');
 const Product = require('../models/Product');
 const path = require('path');
 
-// Image upload logic (Multer Configuration)
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Destination folder for uploads
+// 👇👇 CLOUDINARY SETUP START 👇👇
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+// ⚠️ DHYAN DEIN: Yahan apni API keys paste karni hain!
+cloudinary.config({ 
+  cloud_name: 'duhokqwv0j', // Tumhara Cloud Name (screenshot se liya maine)
+  api_key: '736999584845369', 
+  api_secret: 'rVgkQtDvgghhadMoQNoxuiw4bUI' 
+});
+
+// Image upload logic (Cloudinary Configuration)
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'zippy_products', // Cloudinary mein is naam ke folder mein photos aayengi
+    allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
   },
-  filename: function (req, file, cb) {
-    // Appending timestamp to make the filename unique
-    cb(null, Date.now() + path.extname(file.originalname)); 
-  }
 });
 const upload = multer({ storage: storage });
+// 👆👆 CLOUDINARY SETUP END 👆👆
+
 
 // API 1: Upload New Product (For Seller Dashboard)
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
     const { title, price, category, sellerId } = req.body; 
-    const imagePath = req.file.filename;
+    
+    // 🔥 YAHAN CHANGE HUA HAI: Ab file.filename nahi, balki file.path (live URL) save hoga
+    const imagePath = req.file.path;
 
     const newProduct = new Product({ title, price, category, imagePath, sellerId }); 
     await newProduct.save();
@@ -99,9 +112,10 @@ router.put('/edit/:id', upload.single('file'), async (req, res) => {
     product.price = price || product.price;
     product.category = category || product.category;
 
+    // 🔥 YAHAN CHANGE HUA HAI: 'filename' ki jagah Cloudinary ka 'path' aayega
     // Update image path if a new photo is uploaded
     if (req.file) {
-      product.imagePath = req.file.filename;
+      product.imagePath = req.file.path;
     }
 
     // Save the final updates

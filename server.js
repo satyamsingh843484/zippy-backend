@@ -45,6 +45,11 @@ app.use('/api/orders', orderRoutes);
 const paymentRoutes = require('./routes/payment');
 app.use('/api/payment', paymentRoutes);
 
+//ADMIN ROUTE
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+// ========================================
+
 // ==========================================
 // 1. MONGODB DATABASE CONNECTION
 // ==========================================

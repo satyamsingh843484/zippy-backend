@@ -11,12 +11,27 @@ router.post('/register', async (req, res) => {
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ message: "User already exists" });
 
-        // Naya user save karo
-        user = new User({ name, email, password, role });
-        await user.save();
-        // YAHAN PRINT KARAO 👇
-console.log("🔥 Hurrah! Naya user MongoDB me save ho gaya:", user);
+        // 🔥 SECURITY PATCH: Admin Approval Logic 🔥
+        let secureRole = 'CUSTOMER'; // Default sabko customer manenge
+        
+        if (role === 'SELLER') {
+            // Agar koi seller banna chahta hai, toh usko seedha PENDING me daalo
+            secureRole = 'PENDING_SELLER';
+        } else if (role === 'ADMIN') {
+            // Koi khud se hack karke Admin na ban jaye, isliye Customer bana do
+            secureRole = 'CUSTOMER';
+        } else if (role === 'CUSTOMER') {
+            secureRole = 'CUSTOMER';
+        }
 
+        // Naya user secure role ke sath save karo
+        user = new User({ name, email, password, role: secureRole });
+        await user.save();
+        
+        // YAHAN PRINT KARAO 👇
+        console.log("🔥 Hurrah! Naya secure user MongoDB me save ho gaya:", user);
+
+        // Dhyan de: Response me bhi user.role bhejenge (taki frontend ko pata chale wo PENDING hai)
         res.status(201).json({ id: user._id, name: user.name, email: user.email, role: user.role });
     } catch (error) {
         res.status(500).json({ message: "Server Error", error: error.message });
@@ -26,7 +41,6 @@ console.log("🔥 Hurrah! Naya user MongoDB me save ho gaya:", user);
 // LOGIN API (Pehle se bane account me login)
 router.post('/login', async (req, res) => {
     try {
-        // Frontend query URL me data bhej raha tha, isliye query aur body dono check karenge
         const email = req.query.email || req.body.email;
         const password = req.query.password || req.body.password;
 

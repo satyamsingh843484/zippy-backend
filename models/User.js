@@ -4,7 +4,13 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['CUSTOMER', 'SELLER'], default: 'CUSTOMER' }
+  
+  /* 🔥 YAHAN CHANGE HUA HAI: Enum mein nayi roles add kar di hain 🔥 */
+  role: { 
+    type: String, 
+    enum: ['CUSTOMER', 'PENDING_SELLER', 'SELLER', 'ADMIN'], 
+    default: 'CUSTOMER' 
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
